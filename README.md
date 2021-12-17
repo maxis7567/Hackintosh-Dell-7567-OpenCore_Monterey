@@ -1,82 +1,81 @@
-<p align="center">
-	<img src="https://dortania.github.io/OpenCore-Install-Guide/homepage.png" alt="drawing" width="100"/>
-</p>
+# Personal Hackintosh Guide/Instructions for Dell 7567
 
-<h1>Hackintosh OpenCore Dell Inspiron 15 Gaming 7567</h1>
+### Notes
+ - HDMI doesn't work on this hack because it is connected to nvidia card and we disabled it
+ - Any other issues? Just open an issue in this repo!
 
-![](img/screenshot.png)
+### Known Bugs
+ - 2.1 audio (2.0 works)
+ - Bluetooth not working with some devices (in my case my wireless mi mouse not working)
 
-## What works
+### Specs
+ - Intel i7-7700HQ CPU
+ - Intel HD Graphics 630 / nVidia GTX 1050 Ti
+ - 16GB 2400MHz DDR4 RAM
+ - 15.6” 1080p IPS Display
+ - 500GB Samsung 970 Evo Plus SSD (Nvme)
+ - 1TB 5400RPM Toshiba HDD
 
-Everything except card reader and HDMI output.
+### Prerequisites
+ - Set BIOS options properly:
+   - Disable Legacy Option ROMs
+   - Change SATA operation to AHCI (If already using windows, google how to)
+   - Disable Secure Boot
+   - Disable SGX
 
-## What works partially
+## Creating macOS USB With MacOS (you can create usb installer in windows just google it)
 
-Bluetooth works, but might be buggy and glitchy, buy some USB Bluetooth adapter as they are pretty cheap (only 3~4$), i'm using the Buro BU-BT21A adapter which works out of the box.
+- Download MacOs Big Sur from app store and run this code in terminal
 
-## Creating USB installer
-Format your USB flash drive as FAT32. Download the latest [OpenCore](https://github.com/acidanthera/OpenCorePkg/releases) package, go to the ```/Utilities/macrecovery/```, open your termial in that folder and type:
+```bash
+# Figure out identifier for of your usb (/dev/diskX, for example)
+diskutil list
 
+# Partition your usb in GPT
+diskutil partitionDisk /dev/diskX 1 GPT HFS+J "install_osx" R
+
+# Copy installer imge 
+sudo /Applications/Install\ macOS\ Monterey.app/Contents/Resources/createinstallmedia --volume /Volumes/install_osx
+
+# Rename 
+sudo diskutil rename "Install macOS Monterey" install_osx
 ```
-python ./macrecovery.py -b Mac-E43C1C25D4880AD6 -m 00000000000000000 download
-```
+- Download [Clover Configurator](https://mackie100projects.altervista.org/download-clover-configurator/)
+- Use the app to mount USB EFI partition
+- Copy EFI from repo USB Efi partition
 
-After successful download of the BaseSystem.dmg and BaseSystem.chunklist, create folder called ```com.apple.recovery.boot``` on your USB flash drive, and copy BaseSystem.dmg and BaseSystem.chunklist right in it. Next, go ahead and grab latest EFI from [here](https://github.com/mishailovic/Hackintosh-Dell-7567-OpenCore_Monterey/releases). Unpack the "EFI" folder into the root of your USB flash drive, so USB structure will look like this:
-<details>
-  <summary>Folder structure</summary>
 
-![](img/folder.png)  
+## Booting USB and Installing macOS
+
+  - Press F12 repeatedly for one-time boot-menu and select your usb (if your usb not appear on boot menu you must add manualy from bios)
+  - Choose *install_osx* in OpenCore
+  - Open *diskutility* and format the partition into apfs and label the partition (eg. macOS)
+  - Continue to install
+  - System now automatically reboots, boot again into opencore, but now select 'Install macOS Big Sur' instead of 'install_osx'
   
-</details>
-Your USB is ready, move to BIOS setup section.
 
-## BIOS setup
+## Post Installation
 
-To enter the BIOS turn off your laptop, turn it on, and press ```f12``` button repeatedly. You will see the menu thats lists all your drives and other settings, move to the "BIOS setup" option and hit Enter.
-
-Here you will need to do couple of things:
-* Disable Legacy Option ROMs
-* Change SATA operation to AHCI (If already using windows, google how to)
-* Disable Secure Boot
-* Disable SGX 
-
-Next, go to the Setting --> General --> Boot Sequence and create new boot option that points to ```/EFI/OC/OpenCore.efi``` folder on your USB flash drive, save it and exit from BIOS.
-
-## Installation process
-Turn on your laptop and press ```f12``` button repeatedly, choose the boot option which you configured before. Once you boot the USB, you'll likely be greeted to the following boot options:
-
-1. Windows
-2. macOS Base System (External) / Install macOS Big Sur (External) / USB drive name (External)
-
-Choose macOS option and wait while it boots to the recovery screen (this can take some time, up to 10 min.) Go ahead and format your drives to the APFS, and choose where you wish to the system be installed. Wait while it installs (this can take some time again, depending on your Wi-Fi connection speed :), usually it takes 2 hours), your laptop can reboot several times, it's okay, don't worry.
-
-## Post install
-
-After you waked throught the installation process you will need to copy the EFI folder to your system drive, so you can boot without USB. For that download [Clover Configurator](https://mackie100projects.altervista.org/download-clover-configurator/), open it, go to the EFI mount section and mount your system EFI, then locate the EFI folder in Finder and copy EFI folder from your USB right in it. Unplug your USB and reboot the laptop, it should boot successfully without flash drive. Hooray! 🥳 You just installed the Hackintosh on your Dell laptop, go to the "Fixes" section to apply various fixes for your system.
+- Use Clover Configurator to mount APFS EFI partition
+- Copy EFI from repo USB EFI partition
 
 
-### Fixes
+**Configure ComboJack for Headphone Jack**
+  - open terminal type *sudo* then drag install.sh from tools/comboJack_Installer then press 'Enter'
+  - Reboot  
+  
+  
+**To Do List and Things to Consider**
+- Config file does not include SMBIOS parameters which is a must. One needs to provide own values. There are guides here and there. Your friend is google as always. For ROM adress you can use your builtin ethernet card MAC adress. MacSerial by Acidanthera is a good way to obtain proper serial and motherboard serial numbers. UUID can be generated with terminal command uuidgen. Make it produced at least five times to be sure it is unique enough. For working imessage and facetime all should be set in a sensible way and make sure that they are not used by someone else either hackintosh or real mac.
+- USBMap.kext is set to Macbookpro14,1. If you want to use a different SMBIOS you should also change the correspond model name in the info.plist inside the kext. Fingerprint device is closed to save battery and avoid long waiting before root access. it does not work anyway for now because apple does not allow to use third party ones.
 
-Generate the SMBIOS - [dortania](https://dortania.github.io/OpenCore-Post-Install/universal/iservices.html#using-gensmbios)
-
-Smooth scrolling - [MOS](https://mos.caldis.me/)
-
-Fix Mini Jack output - [ComboJack](https://github.com/hackintosh-stuff/ComboJack/tree/master/ComboJack_Installer)
-
-Disable log on boot - remove ```-v``` from NVRAM > 7C436110-AB2A-4BBB-A880-FE41995C9F82 > boot-args in your config.plist, then choose "reset NVRAM" option in OpenCore picker.
-
-
-### Credits
-
-[seathasky](https://github.com/seathasky/Dell-Inspiron-7567-OC)
-
-[Dortania Open Core install guide](https://dortania.github.io/OpenCore-Install-Guide/)
-
-[maxis7567](https://github.com/maxis7567/Hackintosh-Dell-7567-OpenCore_Big-Sur)
-
-
-### Get support
-
-Telegram chat - https://t.me/dell7567hackintosh
-
+**Disable Hibernation**
+```bash
+sudo pmset -a hibernatemode 0
+sudo rm /var/vm/sleepimage
+sudo mkdir /var/vm/sleepimage
+sudo pmset -a standby 0
+sudo pmset -a autopoweroff 0
+sudo pmset -a powernap 0
+```
 
